@@ -18,7 +18,7 @@ ini = time.time();
 
 lun = 100
 raggio = linspace(1e-12,1e-6,lun);
-lamb = 600*1e-9;
+lamb = 800*1e-9;
 f_x = zeros(lun);
 f_y = zeros(lun);
 f_z = zeros(lun);
@@ -28,7 +28,7 @@ for i in range(lun):
     
     print(i)
     
-    sim = SEW_experiment.SEW_experiment(sqrt(1.75), 1, sqrt(1.5), 1, 1, 1, raggio[i], lamb, (51*(pi/180)), 2*raggio[i], 1);
+    sim = SEW_experiment.SEW_experiment(sqrt(1.5), 1, 1, 1, 1.2*1e5, 0, raggio[i], lamb, (51*(pi/180)), 2*raggio[i], sqrt(1.5));
     
     F_x, F_y, F_z = sim.IntegrateOnSphere();
 
