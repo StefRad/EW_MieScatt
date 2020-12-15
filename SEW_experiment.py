@@ -41,7 +41,7 @@ class SEW_experiment:
         n_coeff = np.size(self.an)
         n = 0
         
-        lp, lp_der = Legendre(0, n_coeff, cos(theta), type = 3)
+        lp, lp_der = Legendre(1, n_coeff, cos(theta), type = 3)
         
         #prefactors = []
         
@@ -69,8 +69,8 @@ class SEW_experiment:
             Hankel_der = Bessel_jn(n, self.k*r, derivative = True) +1j*Bessel_yn(n, self.k*r, derivative = True)
             xi_der = self.k*r*Hankel_der + Hankel
             
-            pi = lp[0,n]/sin(theta)
-            tau = sin(theta)*lp_der[0,n]
+            pi = lp[1,m]/sin(theta)
+            tau = sin(theta)*lp_der[1,m]
             
             # print ("iterazione:")
             # print(n)
