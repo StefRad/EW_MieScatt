@@ -7,6 +7,8 @@ from scipy.special import spherical_jn as Bessel_jn
 from scipy.special import spherical_yn as Bessel_yn
 from scipy import integrate
 
+eps0 = 8.854187813*1e-12
+mu0 = 4*pi*1e-7
 
 class SEW_experiment:
     
@@ -16,31 +18,81 @@ class SEW_experiment:
         self.mu1 = mu1
         self.eps2 = eps2
         self.mu2 = mu2
+        self.E0p = E0p        
+        self.E0s = E0s
         
         self.n1 = np.sqrt(eps1*mu1)
         self.n2 = np.sqrt(eps2*mu2)
         self.dist = dist
         self.gamma = asin(self.n1/self.n2*sin(theta))
-        alpha = -np.imag(self.gamma)
+        alpha = np.imag(self.gamma)
+        self.alpha = alpha
+        #print(alpha)
         self.k = 2*pi/lambd
         exp_ = np.exp(-self.k*dist*sinh(alpha))
-        
+        #print(exp_)
         self.Es = E0s*2*(mu2/mu1)*cos(theta)/((mu2/mu1)*cos(theta)+1j*(self.n2/self.n1)*sinh(alpha))*exp_
         self.Ep = E0p*2*(self.n2/self.n1)*cos(theta)/((eps2/eps1)*cos(theta)+1j*(self.n2/self.n1)*sinh(alpha))*exp_
-        
+        #print(self.Ep)
         self.indice_rifr = indice_rifr
         self.size_param = self.k*diam_part/2
         self.raggio = diam_part / 2;
         
-        an, bn = ms.Mie_ab(self.indice_rifr, self.size_param)
+        an, bn = ms.AutoMie_ab(self.indice_rifr, self.size_param)
         self.an = an
         self.bn = bn
         
+        '''
+        print(self.size_param)
+
+        n_coeff = np.size(self.an)
+        n = 0   
+        S1=0
+        S2=0
+
+        theta = 0.8        
+        lp, lp_der = Legendre(1, n_coeff, cos(theta), type = 2)        
+        
+        for n in range(n_coeff):
+            
+            m = n+1
+            prefactor = (2*m+1)/(m*(m+1))   
+            pi_ = -lp[1,m]/sin(theta)
+            tau = sin(theta)*lp_der[1,m]
+            
+            S1 = S1+prefactor*(self.an[n]*pi_+self.bn[n]*tau)
+            S2 = S2+prefactor*(self.an[n]*tau+self.bn[n]*pi_)
+            
+            print(pi_)
+            
+        print('S1 = ', S1)
+        print('S2 = ', S2)
+        #print(cos(theta))
+        
+        x = self.size_param
+        nmax = np.round(2+x+4*np.power(x,1/3))
+        #an, bn = ms.AutoMie_ab(self.indice_rifr,x)
+        pin, taun = ms.MiePiTau(np.real(cos(theta)),nmax)
+        n = np.arange(1,int(nmax)+1)
+        n2 = (2*n+1)/(n*(n+1))
+        s1 = np.sum(n2[0:len(an)]*(pin[0:len(an)]*an+taun[0:len(bn)]*bn))
+        s2 = np.sum(n2[0:len(an)]*(an*taun[0:len(an)]+bn*pin[0:len(bn)]))        
+        
+        print(pin)
+        #s1,s2 = ms.MieS1S2(indice_rifr,self.size_param, np.real(cos(theta)))
+
+        #print(np.size(self.an))
+        #print(len(bn))
+
+        print('s1 = ', s1)
+        print('s2 = ', s2)
+        print()        
+        '''
     def ScatteredField(self, theta, phi, r):
         
         n_coeff = np.size(self.an)
         n = 0
-        
+        #print(self.an)
         lp, lp_der = Legendre(1, n_coeff, cos(theta), type = 3)
         
         #prefactors = []
@@ -63,14 +115,14 @@ class SEW_experiment:
             
             prefactor = (1j**m)*(2*m+1)/(m*(m+1))
             
-            Hankel = Bessel_jn(n, self.k*r, derivative = False) +1j*Bessel_yn(n, self.k*r, derivative = False)
+            Hankel = Bessel_jn(m, self.k*r, derivative = False) +1j*Bessel_yn(m, self.k*r, derivative = False)
             xi = self.k*r*Hankel
         
-            Hankel_der = Bessel_jn(n, self.k*r, derivative = True) +1j*Bessel_yn(n, self.k*r, derivative = True)
+            Hankel_der = Bessel_jn(m, self.k*r, derivative = True) +1j*Bessel_yn(m, self.k*r, derivative = True)
             xi_der = self.k*r*Hankel_der + Hankel
             
-            pi = lp[1,m]/sin(theta)
-            tau = sin(theta)*lp_der[1,m]
+            pi_ = lp[1,m]/sin(theta)#-lp[1,m]/sin(theta)
+            tau = -sin(theta)*lp_der[1,m]#sin(theta)*lp_der[1,m]#
             
             # print ("iterazione:")
             # print(n)
@@ -87,14 +139,32 @@ class SEW_experiment:
             #Hs_ = np.sqrt(self.eps2/self.mu2)*(-cos(phi)*self.Ep+sin(phi)*self.Es)
             #Hp_ = np.sqrt(self.eps2/self.mu2)*(sin(phi)*self.Ep+cos(phi)*self.Es)  
             
-            E_theta = E_theta + Ep_*(1/r)*prefactor*(1j*self.an[n]*xi_der*tau-self.bn[n]*xi*pi)
-            E_phi = E_phi + Es_*(1/r)*prefactor*(self.bn[n]*xi*tau-1j*self.an[n]*xi_der*pi)
-            E_r = E_r + Ep_*sin(theta)*(1/r**2)*prefactor*(m*(m+1))*1j*self.an[n]*xi*pi
+            E_theta = E_theta + Ep_*(1/(self.k*r))*prefactor*(1j*self.an[n]*xi_der*tau-self.bn[n]*xi*pi_)
+            E_phi = E_phi + Es_*(1/(self.k*r))*prefactor*(self.bn[n]*xi*tau-1j*self.an[n]*xi_der*pi_)
+            E_r = E_r + Ep_*sin(theta)*(1/(self.k*r)**2)*prefactor*(m*(m+1))*1j*self.an[n]*xi*pi_
             
-            H_theta = H_theta - Es_*(1/r)*np.sqrt(self.eps2/self.mu2)*prefactor*(1j*self.bn[n]*xi_der*tau-self.an[n]*xi*pi)
-            H_phi = H_phi + Ep_*(1/r)*np.sqrt(self.eps2/self.mu2)*prefactor*(1j*self.bn[n]*xi_der*pi-self.an[n]*xi*tau)
-            H_r = H_r - Es_*sin(theta)*(1/r**2)*np.sqrt(self.eps2/self.mu2)*prefactor*(m*(m+1))*1j*self.bn[n]*xi*pi            
+            H_theta = H_theta - Es_*(1/(self.k*r))*np.sqrt(self.eps2/self.mu2)*prefactor*(1j*self.bn[n]*xi_der*tau-self.an[n]*xi*pi_)
+            H_phi = H_phi + Ep_*(1/(self.k*r))*np.sqrt(self.eps2/self.mu2)*prefactor*(1j*self.bn[n]*xi_der*pi_-self.an[n]*xi*tau)
+            H_r = H_r - Es_*sin(theta)*(1/(self.k*r)**2)*np.sqrt(self.eps2/self.mu2)*prefactor*(m*(m+1))*1j*self.bn[n]*xi*pi_            
+          
+            H_theta = H_theta*np.sqrt(eps0/mu0)  
+            H_phi = H_phi*np.sqrt(eps0/mu0)  
+            H_r = H_r*np.sqrt(eps0/mu0)  
+        '''  
+        if E_theta > 0.5:         
+            print('scattered:', str(theta), str(phi))
+            print(E_theta)
+            print(E_phi)
+            print(E_r)
+            print()
+            print('jn = ', Bessel_jn(1, self.k*r, derivative = False))
+            print('tau = ', tau)
+            print('pi = ', pi_)
+            print('r = ', r)
+            print('m = ',m)
+            print()           
             
+        #print(self.k)'''
         return E_theta, E_phi, E_r, H_theta, H_phi, H_r
         
     def complexAngleRotation(self, Ex, Ey, Ez, gamma):
@@ -115,12 +185,18 @@ class SEW_experiment:
         Ey = self.Es*exp(1j*self.k*z)
         Ez = 0
         
-        Hx = -np.sqrt(self.eps2/self.mu2)*self.Es*exp(1j*self.k*z)
-        Hy = np.sqrt(self.eps2/self.mu2)*self.Ep*exp(1j*self.k*z)
+        Hx = -np.sqrt(self.eps2/self.mu2)*self.Es*exp(1j*self.k*z)*np.sqrt(eps0/mu0)
+        Hy = np.sqrt(self.eps2/self.mu2)*self.Ep*exp(1j*self.k*z)*np.sqrt(eps0/mu0)
         Hz = 0
         
         E_theta, E_phi, E_r = fromCartToPolField(Ex, Ey, Ez, x ,y, z)
         H_theta, H_phi, H_r = fromCartToPolField(Hx, Hy, Hz, x ,y, z)
+
+        #print('incident:')        
+        #print(E_theta)
+        #print(E_phi)
+        #print(E_r)
+        #print()
         
         return E_theta, E_phi, E_r, H_theta, H_phi, H_r
     
@@ -150,11 +226,11 @@ class SEW_experiment:
         
         Hx,Hy,Hz = fromPolToCartField(H_theta, H_phi, H_r, theta, phi) #controlla
         Hx_, Hy_, Hz_ = self.complexAngleRotation(Hx,Hy,Hz,-self.gamma) 
-
+        '''
         H2 = abs(Hx_)**2+abs(Hy_)**2+abs(Hz_)**2        
         E2 = abs(Ex_)**2+abs(Ey_)**2+abs(Ez_)**2  
         
-        g = 0.5;
+        g = 0.5;#1/(8*pi)#
         
         delta = 0.5*(self.eps2*E2+self.mu2*H2)
         
@@ -174,11 +250,32 @@ class SEW_experiment:
         # T_dot_r_theta = (1/(8*pi))*np.real(self.eps2*(np.conj(E_theta))*E_r+ self.mu2*(np.conj(H_theta))*H_r)
         # T_dot_r_phi =(1/(8*pi))*np.real(self.eps2*(np.conj(E_phi))*E_r+ self.mu2*(np.conj(H_phi))*H_r)
         # T_dot_r_r = (1/(8*pi))*np.real(self.eps2*np.conj(E_r)*E_r+self.mu2*(np.conj(H_r)*H_r)-1/2*(self.eps2*E2+self.mu2*H2))
-    
+        '''
+        Ex_ = np.real(Ex_)
+        Ey_ = np.real(Ey_)
+        Ez_ = np.real(Ez_)
+        
+        Bx_ = mu0*np.real(Hx_)
+        By_ = mu0*np.real(Hy_)
+        Bz_ = mu0*np.real(Hz_)
+        
+        B2 = 0.5*(abs(Bx_)**2+abs(By_)**2+abs(Bz_)**2)        
+        E2 = 0.5*(abs(Ex_)**2+abs(Ey_)**2+abs(Ez_)**2)
+        
+        T_xx = eps0*(Ex_*Ex_-E2)+(1/mu0)*(Bx_*Bx_-B2)
+        T_yy = eps0*(Ey_*Ey_-E2)+(1/mu0)*(By_*By_-B2)
+        T_zz = eps0*(Ez_*Ez_-E2)+(1/mu0)*(Bz_*Bz_-B2)
+        T_xy = eps0*(Ex_*Ey_)+(1/mu0)*(Bx_*By_)
+        T_yx = eps0*(Ey_*Ex_)+(1/mu0)*(By_*Bx_)
+        T_xz = eps0*(Ex_*Ez_)+(1/mu0)*(Bx_*Bz_)
+        T_zx = eps0*(Ez_*Ex_)+(1/mu0)*(Bz_*Bx_)
+        T_zy = eps0*(Ez_*Ey_)+(1/mu0)*(Bz_*By_)
+        T_yz = eps0*(Ey_*Ez_)+(1/mu0)*(By_*Bz_)      
+                
         return T_xx,T_xy,T_xz,T_yx,T_yy,T_yz,T_zx,T_zy,T_zz
 
     def IntegrateOnSphere(self):
-        raggio = self.raggio;
+        raggio = self.raggio +1e-8;
         def dFx(theta,phi):
             T_xx,T_xy,T_xz,T_yx,T_yy,T_yz,T_zx,T_zy,T_zz = self.MaxwellTensorDotR(theta,phi,raggio);
             dF = T_xx*(sin(theta)*cos(phi)) + T_xy*(sin(theta)*sin(phi)) + T_xz*cos(theta);
@@ -202,7 +299,10 @@ class SEW_experiment:
         
         return F_x,F_y,F_z
 
-                                 
+    def Fz_dipole(self):
+        exp_ = np.exp(-2*self.k*self.dist*sinh(self.alpha))
+        Fz = -0.5*(abs(self.Ep)**2+abs(self.Es)**2*(2*cosh(self.alpha)**2-1))*self.k*self.raggio**3*sinh(self.alpha)*np.real((self.indice_rifr**2-self.eps2)/(self.indice_rifr**2+2*self.eps2))*exp_
+        return Fz
                                        
 def fromPolToCartField(E_theta,E_phi,E_r, theta, phi):
         
@@ -222,7 +322,7 @@ def fromCartToPolField(Ex, Ey, Ez, x, y, z):
         theta = 1e-10;
     
     E_theta = Ey*sin(phi)*cos(theta)+Ex*cos(phi)*cos(theta)-Ez*sin(theta)
-    E_phi = Ex*sin(phi)+Ey*cos(phi)
+    E_phi = -Ex*sin(phi)+Ey*cos(phi)
     E_r = Ex*cos(phi)*sin(theta)+Ey*sin(phi)*sin(theta)+Ez*cos(theta)
         
     return E_theta, E_phi, E_r    
