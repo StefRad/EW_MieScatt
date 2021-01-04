@@ -147,9 +147,9 @@ class SEW_experiment:
             H_phi = H_phi + Ep_*(1/(self.k*r))*np.sqrt(self.eps2/self.mu2)*prefactor*(1j*self.bn[n]*xi_der*pi_-self.an[n]*xi*tau)
             H_r = H_r - Es_*sin(theta)*(1/(self.k*r)**2)*np.sqrt(self.eps2/self.mu2)*prefactor*(m*(m+1))*1j*self.bn[n]*xi*pi_            
           
-            H_theta = H_theta*np.sqrt(eps0/mu0)  
-            H_phi = H_phi*np.sqrt(eps0/mu0)  
-            H_r = H_r*np.sqrt(eps0/mu0)  
+        H_theta = H_theta*np.sqrt(eps0/mu0)  
+        H_phi = H_phi*np.sqrt(eps0/mu0)  
+        H_r = H_r*np.sqrt(eps0/mu0)  
         '''  
         if E_theta > 0.5:         
             print('scattered:', str(theta), str(phi))
