@@ -24,12 +24,12 @@ class MieScattForce:
         self.E0p = E0p;
         self.E0s = E0s;
         
-        self.H0p = np.sqrt((8.8542*1e-12)/(1.2*1e-6))*E0p;
-        self.H0s = np.sqrt((8.8542*1e-12)/(1.2*1e-6))*E0s;
+        self.H0p = np.sqrt((8.8542*1e-12)/(4*pi*1e-7))*E0p;
+        self.H0s = np.sqrt((8.8542*1e-12)/(4*pi*1e-7))*E0s;
         
         #particle radius
         self.a = a;
-        self.b = a;
+        self.b = a+1e-6;############################
         
         # distance from surface
         self.h = dist;
@@ -53,7 +53,7 @@ class MieScattForce:
     def alpha1(self,l,m):
         fatt1 = np.sqrt( ((2*l+1)*factorial(l-m)) / (4*pi*factorial(l+m)) )
         psi,psi_der = riccati_jn(l, self.bet)
-        fatt2 = (self.a/self.b)**2 / (l*(l+1)*psi[l])
+        fatt2 = (self.b/self.a)**2 / (l*(l+1)*psi[l])#############
         return fatt1*fatt2
     
     def Q1(self,l,m):
@@ -70,9 +70,9 @@ class MieScattForce:
                 return res
             
         def real_part(theta):
-            return scipy.real(integrand(theta))
+            return np.real(integrand(theta))
         def imag_part(theta):
-            return scipy.imag(integrand(theta))
+            return np.imag(integrand(theta))
         
         I_real = integrate.quad(real_part,0,pi/2)
         I_imag = integrate.quad(imag_part,0,pi/2)
@@ -92,9 +92,9 @@ class MieScattForce:
                 res = sin(theta) * cos(theta) * cos(self.gamma*self.b*cos(theta)) * Legendre(m,l,cos(theta))[0][m,l]*(Imz(abs(m),u))
                 return res
         def real_part(theta):
-            return scipy.real(integrand(theta))
+            return np.real(integrand(theta))
         def imag_part(theta):
-            return scipy.imag(integrand(theta))
+            return np.imag(integrand(theta))
         
         I_real = integrate.quad(real_part,0,pi/2)
         I_imag = integrate.quad(imag_part,0,pi/2)
@@ -102,7 +102,7 @@ class MieScattForce:
         return fatt*(I_real[0] + 1j*I_imag[0])
     
     def Q3(self,l,m):
-        fatt = 4*pi*((-1)**(m))*(m / (self.beta*self.b))
+        fatt = 4*pi*1j*((-1)**(m))*(m / (self.beta*self.b)) ######################
         if (l+m)%2 == 0:
             def integrand(theta):
                 u = self.beta*self.b*sin(theta)
@@ -115,9 +115,9 @@ class MieScattForce:
                 return res
         
         def real_part(theta):
-            return scipy.real(integrand(theta))
+            return np.real(integrand(theta))
         def imag_part(theta):
-            return scipy.imag(integrand(theta))
+            return np.imag(integrand(theta))
         
         I_real = integrate.quad(real_part,0,pi/2)
         I_imag = integrate.quad(imag_part,0,pi/2)
