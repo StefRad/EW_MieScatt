@@ -38,6 +38,7 @@ class MieScattForce:
         self.lamb = lamb;
         
         self.n21 = n2 / n1;
+        self.n32 = n3 / n2;
         
         self.alpha = (n2*2*pi*a) / (lamb);
         self.bet   = (n2*2*pi*self.b) / (lamb);
