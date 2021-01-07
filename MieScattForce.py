@@ -163,31 +163,121 @@ class MieScattForce:
         
     def Mie_AB(self,l):
         
-        Ap = []
-        Bp = []
-        As = []
-        Bs = []
+        self.l = l
+        
+        self.Ap = []
+        self.Bp = []
+        self.As = []
+        self.Bs = []
+        
+        self.a_p = []
+        self.b_p = []
+        self.a_s = []
+        self.b_s = []
         
         for i in range(l):
+            
             Ap1 = []
             Bp1 = []
             As1 = []
             Bs1 = []
+            
+            a_p1 = []
+            b_p1 = []
+            a_s1 = []
+            b_s1 = []
+            
             k = i+1
+            
             for j in range(2*k+1):
+                
+                Hankel = Bessel_jn(k, self.alpha, derivative = False) +1j*Bessel_yn(k, self.alpha, derivative = False)
+                xi = self.alpha*Hankel
+
+                Hankel_der = Bessel_jn(k, self.alpha, derivative = True) +1j*Bessel_yn(k, self.alpha, derivative = True)
+                xi_der = self.alpha*Hankel_der + Hankel
+                
+                psi,psi_der     = riccati_jn(k, self.alpha)
+                psi_n,psi_der_n = riccati_jn(k, self.n32*self.alpha)
+                
                 m = j-k;
-                print(m)
-                print((sin(self.theta1)*self.Q1(k,m))-((1j)*np.sqrt(sin(self.theta1)**2 - self.n21**2)*self.Q2(k,m)))
-                Ap1.append((self.alpha1(k,m)/self.n21) * self.Tp * exp(-self.beta*self.h) * ((sin(self.theta1)*self.Q1(k,m))-((1j)*np.sqrt(sin(self.theta1)**2 - self.n21**2)*self.Q2(k,m))))
-                Bp1.append(self.n2*self.alpha1(k,m) * self.Tp * exp(-self.beta*self.h) * self.Q3(k,m))
-                As1.append((self.Ts / (self.n2*self.Tp)) * self.n2*self.alpha1(k,m) * self.Tp * exp(-self.beta*self.h) * self.Q3(k,m))
-                Bs1.append(-((self.n2*self.Ts)/self.Tp) * (self.alpha1(k,m)/self.n21) * self.Tp * exp(-self.beta*self.h) * (sin(self.theta1)*self.Q1(k,m)-(1j)*np.sqrt(sin(self.theta1)**2 - self.n21**2)*self.Q2(k,m)))
-            Ap.append(Ap1)
-            Bp.append(Bp1)
-            As.append(As1)
-            Bs.append(Bs1)
+                
+                Alm_p = (self.alpha1(k,m)/self.n21) * self.Tp * exp(-self.beta*self.h) * ((sin(self.theta1)*self.Q1(k,m))-((1j)*np.sqrt(sin(self.theta1)**2 - self.n21**2)*self.Q2(k,m)))
+                Blm_p = self.n2*self.alpha1(k,m) * self.Tp * exp(-self.beta*self.h) * self.Q3(k,m)
+                Alm_s = (self.Ts / (self.n2*self.Tp)) * Blm_p
+                Blm_s = -((self.n2*self.Ts)/self.Tp) * Alm_p
+                alm_p = ((psi_der_n[k]*psi[k] - self.n32*psi_n[k]*psi_der[k]) / (self.n32*psi_n[k]*xi_der - psi_der_n[k]*xi)) * Alm_p
+                blm_p = ((self.n32*psi_der_n[k]*psi[k] - psi_n[k]*psi_der[k]) / (psi_n[k]*xi_der - self.n32*psi_der_n[k]*xi)) * Blm_p
+                alm_s = ((psi_der_n[k]*psi[k] - self.n32*psi_n[k]*psi_der[k]) / (self.n32*psi_n[k]*xi_der - psi_der_n[k]*xi)) * Alm_s
+                blm_s = ((self.n32*psi_der_n[k]*psi[k] - psi_n[k]*psi_der[k]) / (self.n32*psi_n[k]*xi_der - psi_der_n[k]*xi)) * Blm_s
+                
+                Ap1.append(Alm_p)
+                Bp1.append(Blm_p)
+                As1.append(Alm_s)
+                Bs1.append(Blm_s)
+                
+                a_p1.append(alm_p)
+                b_p1.append(blm_p)
+                a_s1.append(alm_s)
+                b_s1.append(blm_s)
+                
+                
+                
+            self.Ap.append(Ap1)
+            self.Bp.append(Bp1)
+            self.As.append(As1)
+            self.Bs.append(Bs1)
+            
+            self.a_p.append(a_p1)
+            self.b_p.append(b_p1)
+            self.a_s.append(a_s1)
+            self.b_s.append(b_s1)
+            
         
-        return Ap,As,Bp,Bs
+        return self.Ap,self.As,self.Bp,self.Bs
+    
+    def force(self):
+        
+        f_xy = 0;
+        f_z  = 0;
+        
+        fatt = (1j/2) * (self.alpha**2 / 2);
+        
+        n = self.n2**2
+        
+        a = self.a_s
+        b = self.b_s
+        A = self.As
+        B = self.Bs
+        
+        for i in range(self.l-1):
+            
+            k = i+1
+            
+            for j in range(2*k+1):
+                
+                m = j-k;
+                
+                pf1 = np.sqrt(((k+m+2)*(k+m+1))/((2*k + 1)*(2*k + 3))) * k * (k+2);
+                pf2 = np.sqrt(((k-m+2)*(k-m+1))/((2*k + 1)*(2*k + 3))) * k * (k+2);
+                pf3 = np.sqrt((k+m+1)*(k-m)) * self.n2;
+                
+                add1 = pf1*(2*n*a[i][j]*np.conj(a[i+1][j+2]) + n*a[i][j]*np.conj(A[i+1][j+2]) + n*A[i][j]*np.conj(a[i+1][j+2]) + 2*b[i][k]*np.conj(b[i+1][j+2]) + b[i][k]*np.conj(B[i][k]) + B[i][j]*np.conj(b[i+1][j+2]) )
+                add2 = pf2*(2*n*a[i+1][j]*np.conj(a[i][j]) + n*a[i+1][j]*np.conj(A[i][j]) + n*A[i+1][j]*np.conj(a[i][j]) + 2*b[i+1][j]*np.conj(b[i][j]) + b[i+1][j]*np.conj(B[i][j]) + B[i+1][j]*np.conj(b[i][k]))
+                if j < i-1 :
+                    add3 = pf3*(-2*a[i][j]*np.conj(b[i][j+1]) + 2*b[i][j]*np.conj(a[i][j+1]) - a[i][j]*np.conj(B[i][j+1]) + b[i][j]*np.conj(A[i][j]) + B[i][j]*np.conj(a[i][j+1]) + A[i][j]*np.conj(b[i][j+1]) )
+                else:
+                    add3 = 0
+                
+                
+                f_xy = f_xy + add1 + add2 - add3;
+                
+        f_xy = fatt*f_xy;
+        
+        f_x = np.real(f_xy)
+        f_y = np.imag(f_xy)
+        
+        return f_x,f_y,f_z
     
     
 def Imz(m,z):
