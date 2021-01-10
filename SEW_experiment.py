@@ -101,7 +101,7 @@ class SEW_experiment:
         
         Ex_ = Ex*cos(gamma)-Ez*sin(gamma)
         Ey_ = Ey
-        Ez_ = Ez*sin(gamma)+Ez*cos(gamma)
+        Ez_ = Ex*sin(gamma)+Ez*cos(gamma)
         
         return Ex_, Ey_, Ez_
     
