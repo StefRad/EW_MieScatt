@@ -521,6 +521,34 @@ class SEW_experiment:
                 int_z = int_z + dFz((0.5+k)*lato_theta, (0.5+n)*lato_phi)*lato_phi*lato_theta
                      
         return int_x, int_y, int_z
+    
+    def scatteredPower(self, _theta_):
+        raggio = self.raggio;
+        def rPoynting(theta,phi):
+            
+            x,y,z = fromPolToCart(theta, phi, raggio)
+
+            x_,y_,z_ = self.complexAngleRotation(x,y,z, np.conj(self.gamma))
+            theta_, phi_, r_ = fromCartToPol(x_,y_,z_)
+
+            et, ep, er, ht, hp, hr = self.ScatteredField(theta_,phi_,r_,False)
+            
+            Ex,Ey,Ez = fromPolToCartField(et,ep,er, theta_, phi_) #controlla
+            Ex_, Ey_, Ez_ = self.complexAngleRotation(Ex,Ey,Ez,-np.conj(self.gamma)) 
+        
+            Hx,Hy,Hz = fromPolToCartField(ht,hp,hr, theta_, phi_) #controlla
+            Hx_, Hy_, Hz_ = self.complexAngleRotation(Hx,Hy,Hz,-np.conj(self.gamma))             
+            
+            Er, Et, Ep = fromCartToPolField(Ex_, Ey_, Ez_, x, y, z)
+            Hr, Ht, Hp = fromCartToPolField(Hx_, Hy_, Hz_, x, y, z)
+            
+            integrand = Et*np.conj(Hp)-Ep*np.conj(Ht)
+            
+            return np.real(integrand) * np.real(sin(theta)) * raggio**2
+
+        W = integrate.nquad(rPoynting, [[pi-_theta_,pi],[0,2*pi]]);
+
+        return -0.5*W[0], -0.5*W[1] 
                 
 def fromPolToCartField(E_theta,E_phi,E_r, theta, phi):
         
@@ -536,9 +564,9 @@ def fromCartToPolField(Ex, Ey, Ez, x, y, z):
     acos_phi = acos(x/np.sqrt(x**2+y**2))
     theta = acos(z/np.sqrt(x**2+y**2+z**2))
     
-    if np.real(acos_phi+asin_phi) < 3.1459266 and np.real(acos_phi+asin_phi) > 3.14159265:
+    if np.real(acos_phi+asin_phi) < 3.14159266 and np.real(acos_phi+asin_phi) > 3.14159265:
         phi = acos_phi
-    elif np.real(acos_phi-asin_phi) < 3.1459266 and np.real(acos_phi-asin_phi) > 3.14159265:
+    elif np.real(acos_phi-asin_phi) < 3.14159266 and np.real(acos_phi-asin_phi) > 3.14159265:
         phi = pi - asin_phi
     elif np.real(acos_phi) < -np.real(asin_phi) +1e-5 and np.real(acos_phi) > -np.real(asin_phi) -1e-5:
         phi = 2*pi + asin_phi
@@ -558,10 +586,10 @@ def fromCartToPol(x,y,z):
     acos_phi = acos(x/np.sqrt(x**2+y**2))
     theta = acos(z/np.sqrt(x**2+y**2+z**2))
     
-    if np.real(acos_phi+asin_phi) < 3.1459266 and np.real(acos_phi+asin_phi) > 3.14159265:
+    if np.real(acos_phi+asin_phi) < 3.14159266 and np.real(acos_phi+asin_phi) > 3.14159265:
         #print('ciao')
         phi = acos_phi
-    elif np.real(acos_phi-asin_phi) < 3.145927 and np.real(acos_phi-asin_phi) > 3.1415926:
+    elif np.real(acos_phi-asin_phi) < 3.14159266 and np.real(acos_phi-asin_phi) > 3.14159265:
         #print('ciao')
         phi = pi - asin_phi
     elif np.real(acos_phi) < -np.real(asin_phi) +1e-5 and np.real(acos_phi) > -np.real(asin_phi) -1e-5:

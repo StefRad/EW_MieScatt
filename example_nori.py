@@ -18,30 +18,35 @@ import cmath
 
 ini = time.time();
 
-lun = 70
-raggio = linspace(1e-8,2*5e-7,lun);#linspace(0.1,1,lun)#
+lun = 100
+raggio = linspace(1e-8,3*5e-7,lun);#linspace(0.1,1,lun)#
 #raggio = 0.05*(1.06*1e-6)/(2*pi)
 #print(raggio)
+theta_obj = pi/2.2
+
 lamb = 1.06*1e-6;
 f_x = zeros(lun);
 f_y = zeros(lun);
 f_z = zeros(lun);
 ka  = zeros(lun);
+power = zeros(lun)
 
 eps0 = 8.854187813*1e-12
+mu0 = 4*pi*1e-7
+
 convers = 1e-5#sqrt(4*pi*eps0)
 n_part = cmath.sqrt(-12.2+3j)
 
-Ep = 1#convers*1.2*1e5
-Es = 0
+Ep = 0#convers*
+Es = 1
 
 dati = open('dati.txt', 'w')
 
 for i in range(lun):
     
-    print(i)
-    print('----------------------------------------------------')
-    print('----------------------------------------------------')
+    #print(i)
+    #print('----------------------------------------------------')
+    #print('----------------------------------------------------')
     #P_0 = eps0*(raggio[i])**2*(abs(Ep)**2+abs(Es)**2)#(1/(4*pi))*(raggio[i])**2*(abs(Ep)**2+abs(Es)**2)
     #P_0 = eps0*(10e-8)**2*(abs(10)**2)
     P_0= (1/(4*pi))*(raggio[i])**2*(abs(Ep)**2+abs(Es)**2)
@@ -53,12 +58,15 @@ for i in range(lun):
     #sim = SEW_experiment.SEW_experiment(1.75**2, 1, 1, 1, Ep, Es, raggio, lamb, (51*(pi/180)), 2*raggio, 1.5);
     
     F_x, F_y, F_z = sim.IntegrateOnSphere();
+    p, perr = sim.scatteredPower(theta_obj)
+    
+    power[i] = p*sqrt(eps0/mu0)*(1.2*1e5)**2
 
     f_x[i] = F_x[0]/P_0;
     f_y[i] = F_y[0]/P_0;
     f_z[i] = F_z[0]/P_0; 
-    print(f_x[i])
-    fz_app = sim.Fz_dipole()
+
+    #fz_app = sim.Fz_dipole()
 
     ka[i] = raggio[i] * ((2*pi) / lamb);
     
@@ -73,8 +81,11 @@ for i in range(lun):
     
     #P_0=(1/(4*pi))*(raggio[i])**2*(abs(Ep)**2+abs(Es)**2)
     #P_0 = (1/(4*pi))*(10e-8)**2*(abs(10)**2)
-    dati.write(str(fz_app/P_0))      
+    #dati.write(str(fz_app/P_0))      
     dati.write('\n')
+    progress = int((i/lun)*100)
+    print("\r [{0}{1}] {2}%".format("*"*int(round(progress/10))," "*int(10-round(progress/10)),progress), end="")
+
     
 dati.close()
 
@@ -85,6 +96,9 @@ t = fin - ini;
 print ("tempo esecuzione(s):",t)
 
 plt.plot(ka,f_x,'r',ka,f_y,'b',ka,f_z,'g');
+
+plt.figure()
+plt.plot(ka,power)
 
 plt.show();
 
