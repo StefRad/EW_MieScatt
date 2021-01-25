@@ -6,6 +6,7 @@ from scipy.special import clpmn as Legendre
 from scipy.special import spherical_jn as Bessel_jn
 from scipy.special import spherical_yn as Bessel_yn
 from scipy import integrate
+from matplotlib import pyplot as plt
 
 eps0 = 8.854187813*1e-12
 mu0 = 4*pi*1e-7
@@ -549,7 +550,39 @@ class SEW_experiment:
         W = integrate.nquad(rPoynting, [[pi-_theta_,pi],[0,2*pi]]);
 
         return -0.5*W[0], -0.5*W[1] 
+    
+    def scatteredIntensity_point(self, x,y,z):
+
+        x_,y_,z_ = self.complexAngleRotation(x,y,z, np.conj(self.gamma))
+        theta_, phi_, r_ = fromCartToPol(x_,y_,z_)
+        
+        et, ep, er, ht, hp, hr = self.ScatteredField(theta_,phi_,r_,False)
+        
+        Ex,Ey,Ez = fromPolToCartField(et,ep,er, theta_, phi_) #controlla
+        Ex_, Ey_, Ez_ = self.complexAngleRotation(Ex,Ey,Ez,-np.conj(self.gamma)) 
+    
+        Hx,Hy,Hz = fromPolToCartField(ht,hp,hr, theta_, phi_) #controlla
+        Hx_, Hy_, Hz_ = self.complexAngleRotation(Hx,Hy,Hz,-np.conj(self.gamma))             
+        
+        Sz = Ex_*np.conj(Hy_)-Ey_*np.conj(Hx_)
+
+        return -0.5*np.real(Sz)
+    
+    def light_on_glass(self,npunti, _theta_):
+        
+        x_extr = self.dist*np.tan(pi-_theta_)
+        lato = 2*x_extr/npunti
+        
+        glass = np.empty((npunti,npunti))
+        
+        for i in range(npunti):
+            for j in range(npunti):
                 
+                glass[i,j] = self.scatteredIntensity_point(-x_extr+(0.5+i)*lato, -x_extr+(0.5+j)*lato, self.dist)
+                
+        plt.imshow(glass, cmap='Blues_r')        
+        return glass
+         
 def fromPolToCartField(E_theta,E_phi,E_r, theta, phi):
         
     Ex = cos(theta)*cos(phi)*E_theta - sin(phi)*E_phi + sin(theta)*cos(phi)*E_r
