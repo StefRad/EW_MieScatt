@@ -545,7 +545,7 @@ class SEW_experiment:
             
             integrand = Et*np.conj(Hp)-Ep*np.conj(Ht)
             
-            return np.real(integrand) * np.real(sin(theta)) * raggio**2
+            return np.real(integrand) * np.real(sin(theta)) * (100*raggio)**2
 
         W = integrate.nquad(rPoynting, [[pi-_theta_,pi],[0,2*pi]]);
 
@@ -570,7 +570,7 @@ class SEW_experiment:
     
     def light_on_glass(self,npunti, _theta_):
         
-        x_extr = self.dist*np.tan(pi-_theta_)
+        x_extr = self.dist*np.tan(_theta_)
         lato = 2*x_extr/npunti
         
         glass = np.empty((npunti,npunti))

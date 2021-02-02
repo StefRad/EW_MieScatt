@@ -20,7 +20,7 @@ ini = time.time();
 
 lun = 2
 #n_dist = 20
-raggio = linspace(1e-9,5e-7,lun);#linspace(0.1,1,lun)#
+raggio = linspace(1e-9,0.8e-7,lun);#linspace(0.1,1,lun)#
 #dist = linspace(10e-9, 5e-7, n_dist)
 #raggio = 0.05*(1.06*1e-6)/(2*pi)
 #print(raggio)
@@ -42,7 +42,7 @@ mu0 = 4*pi*1e-7
 convers = 1e-5#sqrt(4*pi*eps0)
 n_part = cmath.sqrt(-12.2+3j)
 
-Ep = 1/sqrt(2)#convers*
+Ep = 1j/sqrt(2)#convers*
 Es = 1/sqrt(2)
 
 dati = open('dati_Au_lin_trasv.txt', 'w')
@@ -60,7 +60,7 @@ for i in range(lun):
     #print(abs(Ep)**2)
     #convers = 1#/3*1e-4    
     
-    sim = SEW_experiment.SEW_experiment(1.75**2, 1, 1, 1, Ep, Es, raggio[i], lamb, (51*(pi/180)), 2*raggio[i], 0.73592+1j*2.016);
+    sim = SEW_experiment.SEW_experiment(1.75**2, 1, 1, 1, Ep, Es, raggio[i], lamb, (51*(pi/180)), 2*raggio[i], 2.0599)#0.73592+1j*2.016);
     #sim = SEW_experiment.SEW_experiment(1.5**2, 1, 1, 1, 0, 10, 10e-8, 632.8*1e-9, (42*(pi/180)), 2*10e-8, 1j);
     #sim = SEW_experiment.SEW_experiment(1.75**2, 1, 1, 1, Ep, Es, raggio, lamb, (51*(pi/180)), 2*raggio, 1.5);
     
@@ -79,6 +79,10 @@ for i in range(lun):
     #fz_app = sim.Fz_dipole()
     
     ka[i] = raggio[i] * ((2*pi) / lamb);
+    
+    print('ka = ',ka[i])
+    print('Fx = ',Fx[i])
+    print('potenza = ',power[i])    
     
     dati.write(str(ka[i]))
     dati.write(' ')
