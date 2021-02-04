@@ -652,5 +652,33 @@ def fromPolToCart(theta, phi, r):
     
     return x, y, z
 
+def refractive_index_vs_radius(ref_ind,raggio,lambd):
+    
+    c = 1/np.sqrt(mu0*eps0)
+    h_tagliato = 6.582119569*1e-16 #eV*s
+    omega = c*2*pi/lambd #in aria!
+    omega_p = 13e+15 #Hz, Granqvist
+    gamma_free = 1.1e+14 + 0.8*14.1e+14/raggio #(5)
+    gamma_b = 2.4e+14
+    Q_size = 2.3*1e+24*(1-exp(raggio/(3.5e-10))) #Hz
+    k_b = 8.617333262 #eV*K
+    omega_g = 2.1/h_tagliato
+    T = 300
+    
+    eps_free = 1-omega_p**2/(omega**2+1j*gamma_free*omega)
+
+    def integrand(x):
+        
+        def Fermi(y,T_):
+            return 1/(1+np.exp((h_tagliato*omega-2.5)/(k_b*T_)))
+        
+        return np.sqrt(x-omega_g)/x*(1-Fermi(x,T))*(x**2-omega**2+gamma_b**2+2j*omega*gamma_b)/((x**2-omega**2+gamma_b**2+gamma_b**2)**2+4*omega**2*gamma_b**2)
+        
+    eps_bound = integrate.quad(integrand, omega_g, np.inf)
+    eps_bound = eps_bound*Q_size
+    
+    return eps_free + eps_bound
+    
+
 def f(x):
     return abs((0.46236138708596713-1.1851104600554436j))*exp(-2*pi*x/800e-9)
