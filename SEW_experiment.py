@@ -667,15 +667,24 @@ def refractive_index_vs_radius(ref_ind,raggio,lambd):
     
     eps_free = 1-omega_p**2/(omega**2+1j*gamma_free*omega)
 
-    def integrand(x):
+    def integrand_real(x):
         
         def Fermi(y,T_):
             return 1/(1+np.exp((h_tagliato*omega-2.5)/(k_b*T_)))
         
-        return np.sqrt(x-omega_g)/x*(1-Fermi(x,T))*(x**2-omega**2+gamma_b**2+2j*omega*gamma_b)/((x**2-omega**2+gamma_b**2+gamma_b**2)**2+4*omega**2*gamma_b**2)
+        return np.real(np.sqrt(x-omega_g)/x*(1-Fermi(x,T))*(x**2-omega**2+gamma_b**2+2j*omega*gamma_b)/((x**2-omega**2+gamma_b**2+gamma_b**2)**2+4*omega**2*gamma_b**2))
+
+    def integrand_imag(x):
         
-    eps_bound = integrate.quad(integrand, omega_g, np.inf)
-    eps_bound = eps_bound*Q_size
+        def Fermi(y,T_):
+            return 1/(1+np.exp((h_tagliato*omega-2.5)/(k_b*T_)))
+        
+        return np.imag(np.sqrt(x-omega_g)/x*(1-Fermi(x,T))*(x**2-omega**2+gamma_b**2+2j*omega*gamma_b)/((x**2-omega**2+gamma_b**2+gamma_b**2)**2+4*omega**2*gamma_b**2))
+        
+        
+    eps_bound_real = integrate.quad(integrand_real, omega_g, np.inf)
+    eps_bound_imag = integrate.quad(integrand_imag, omega_g, np.inf)
+    eps_bound = (eps_bound_real[0]+1j*eps_bound_imag[0])*Q_size
     
     return eps_free + eps_bound
     
